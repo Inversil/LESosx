@@ -1,0 +1,2 @@
+this folder contains all the default resources for LES.
+overwriting files here could potentially put you in a spot where LES stops working properly permanently.
