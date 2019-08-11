@@ -1,5 +1,5 @@
 # LESosx
-This is the repository for the LESosx source code
+This is the repository for the source code of the Live Enhancement Suite for Mac.
 
 LES on mac is a modified version of the Hammerspoon client, which includes a bunch of custom scripts in it that self-extract.
 If you go inside the .app package contents of the distributed app you'll already see all of the code and resources available to you.
