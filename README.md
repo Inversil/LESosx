@@ -10,5 +10,3 @@ This github repository only contains the modified files mimmicking the internal 
 The easter eggs and default configuration files are stored in the .Hidden directory.
 
 I'm not sure if this is the best approach for this, so let me know if you want me to set this up differently.
-
-- Inverted Silence
