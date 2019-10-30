@@ -11,5 +11,7 @@ The easter eggs and default configuration files are stored in the .Hidden direct
 
 I'm not sure if this is the best approach for this, so let me know if you want me to set this up differently.
 
-Feel free to message me on twitter or discord InvertedSilence#9999 if you want to talk to me about this. 
+The installer is a completely seperate program, that does nothing but downloading the .app from another git & whitelist the program from gatekeeper.
+
+Feel free to message me on twitter or discord InvertedSilence#9999 if you want to talk to me about this git. 
 Alternatively you can email me at yo@invertedsilence.com, but emails tend to not be as fast as text messages :-)
