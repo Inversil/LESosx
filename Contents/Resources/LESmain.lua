@@ -1,11 +1,9 @@
--- release v13
+-- release v15
 
 homepath = os.getenv("HOME") -- getting the current user's username for later
-version = "release v13" -- allows users to check the version of the script file by testing the variable "version" in the console
+version = "release v15" -- allows users to check the version of the script file by testing the variable "version" in the console
 
 if console then console:close() end -- if the console is up, close the console. This workaround prevents hammerspoon from shoving the console in your face at startup.
-_G.stricttimevar = true -- enables strict time by default
-
 
 ----------------------
 --	Initialisation  --
@@ -63,6 +61,7 @@ if testfirstrun() == false then -- stuff to do when you start the program for th
 
   os.execute("mkdir -p ~/.hammerspoon/resources") -- creates the resources folder
   os.execute("echo '' >~/.hammerspoon/resources/firstrun.txt") -- making sure the section of this script doesn't trigger twice
+  os.execute("echo '' >~/.hammerspoon/resources/strict.txt") -- enables strict time by default
 
   os.execute([[cp /Applications/Live\ Enhancement\ Suite.app/Contents/.Hidden/settings.ini ~/.hammerspoon/]]) -- extracting config defaults from the .Hidden directory embedded inside the modified hammerspoon .app package.
   os.execute([[cp /Applications/Live\ Enhancement\ Suite.app/Contents/.Hidden/menuconfig.ini ~/.hammerspoon/]])
@@ -86,7 +85,7 @@ end
 
  -- updating LES using the installer basically only replaces the .app file in your applications folder with the new one.
  -- this area of the script makes sure that the init.lua script file is replaced again if I ever make a change to it.
- -- the init.lua file is not THIS file, it's the redirect.
+ -- the init.lua file is not THIS file, it's the redirect that's dropped into ~/.hammerspoon.
 
 function testcurrentversion(ver)
 
@@ -204,7 +203,7 @@ menubarwithdebugoff = {
     { title = "Donate", fn = function() hs.osascript.applescript([[open location "https://www.paypal.me/enhancementsuite"]]) end },
     { title = "-" },  
     { title = "Project Time", fn = function() requesttime() end },
-    { title = "Strict Time", state = "on", fn = function() setstricttime() end },
+    { title = "Strict Time", fn = function() setstricttime() end },
     { title = "-" },  
     { title = "Reload", fn = function() reloadLES() end },
     { title = "Website", fn = function() hs.osascript.applescript([[open location "https://enhancementsuite.me"]]) end },
@@ -223,13 +222,28 @@ menubartabledebugon = {
     { title = "Donate", fn = function() hs.osascript.applescript([[open location "https://www.paypal.me/enhancementsuite"]]) end },
     { title = "-" },  
     { title = "Project Time", fn = function() requesttime() end },
-    { title = "Strict Time", state = "on", fn = function() setstricttime() end },
+    { title = "Strict Time", fn = function() setstricttime() end },
     { title = "-" },  
     { title = "Reload", fn = function() reloadLES() end },
     { title = "Website", fn = function() hs.osascript.applescript([[open location "https://enhancementsuite.me"]]) end },
     { title = "Manual", fn = function() hs.osascript.applescript([[open location "https://docs.enhancementsuite.me"]]) end },
     { title = "Exit", fn = function() if trackname then ; coolfunc() ; end ; os.exit() end }
 }
+
+filepath = homepath .. "/.hammerspoon/resources/strict.txt"
+f=io.open(filepath,"r")
+if f~=nil then 
+  io.close(f) 
+  _G.stricttimevar = true
+  menubarwithdebugoff[7].state = "on"
+  menubartabledebugon[11].state = "on"
+else
+  _G.stricttimevar = false
+  menubarwithdebugoff[7].state = "off"
+  menubartabledebugon[11].state = "off"
+end
+f = nil
+filepath = nil -- sets the strict time setting
 
 -- this is the scale menu that happens whn you double right click while holding shift.
 
@@ -347,12 +361,12 @@ function buildPluginMenu()
 
   for i = #arr, 1, - 1 -- this part of the code replaces parts of the menu config file with stuff that's easier to parse in lua.
     do
+    arr[i] = string.gsub(arr[i], "“", "\"")
     if arr[i] == "—\r" or arr[i] == "-\n"  or arr[i] == "—" then
       print("divider line found")
       arr[i] = "--"
       table.insert(arr, i, "--")
-    elseif string.len(arr[i]) < 2 
-      then
+    elseif string.len(arr[i]) < 2 and not string.match(arr[i], "%w") then -- this is a bandaid fix preventing lots of empty menu entires 
       table.remove(arr, i)
     elseif arr[i] == nil then
       table.remove(arr, i)
@@ -656,6 +670,8 @@ function buildSettings() -- this function digests the settings.ini file.
     end
   end
 
+  scaling = 0
+
   settings = io.open("settings.ini", "r")
   settingsArray = {}
   for line in settings:lines() do
@@ -815,6 +831,18 @@ function buildSettings() -- this function digests the settings.ini file.
       end
     end
 
+    if string.find(settingsArray[i], "vstshortcuts =") then
+      print("vstshortcuts found")
+      _G.vstshortcuts = settingsArray[i]:gsub(".*(.*)%=%s","%1")
+      if string.match(_G.vstshortcuts, "%D") then
+        settingserrorbinary("vstshortcuts", "a number between 0 and 1")
+      end
+      _G.vstshortcuts = tonumber(_G.vstshortcuts)
+      if _G.vstshortcuts > 1 or _G.vstshortcuts < 0 then
+        settingserrorbinary("vstshortcuts", "a number between 0 and 1")
+      end
+    end
+
     if string.find(settingsArray[i], "ctrlabsoluteduplicate =") then
       print("ctrlabsoluteduplicate found")
       _G.ctrlabsoluteduplicate = settingsArray[i]:gsub(".*(.*)%=%s","%1")
@@ -831,7 +859,7 @@ function buildSettings() -- this function digests the settings.ini file.
       print("pianorollmacro found")
       if hs.keycodes.map[settingsArray[i]:gsub(".*(.*)%=%s","%1")] == nil and _G.nomacro == nil then -- checks if the entered key exists on the keyboard.
       	-- there is an alternate error message here because the generic one confused too many people.
-        hs.osascript.applescript([[tell application "System Events" to display dialog "Hey! The settings entry for \"pianorollmacro\" is not a character corresponding to a key on your keyboard." & return & "" & return & "Closing this dialog box will open the settings file for you; please change the character under \"pianorollmacro\" to a key that exists on your keyboard and then restart. You won't be able to properly use many features without it." & return & "" & return & "LES will continue to run without a proper pianoroll macro mapped. Good luck!" buttons {"Ok"} default button "Ok" with title "Live Enhancement Suite" with icon POSIX file "/Applications/Live Enhancement Suite.app/Contents/Resources/LESdialog2.icns"]]) 
+        hs.osascript.applescript([[tell application "System Events" to display dialog "Hey! The settings entry for \"pianorollmacro\" is not a character corresponding to a key on your keyboard." & return & "" & return & "Closing this dialog box will open the settings file for you; please change the character under \"pianorollmacro\" to a key that exists on your keyboard and then restart the program. You won't be able to properly use many features without it." & return & "" & return & "LES will continue to run without a proper pianoroll macro mapped." buttons {"Ok"} default button "Ok" with title "Live Enhancement Suite" with icon POSIX file "/Applications/Live Enhancement Suite.app/Contents/Resources/LESdialog2.icns"]]) 
         os.execute("open ~/.hammerspoon/settings.ini -a textedit")
         _G.nomacro = true -- a variable that keeps track of whether or not there's a working macro, functions that use it will be excluded when there's not.
       else
@@ -1042,7 +1070,7 @@ reloadLES() -- when the script reaches this point, reloadLES is executed for a f
 -----------------------
 
 -- this is direct's hyper. it opens the plugin menu. It's kept in for fallback purposes.
--- it's the only hs.hotkey in the entire script.
+-- the difference between hs.hotkey is that it blocks the original input; hs.eventtap.event does not.
 
 -- This is my current fallback because I cannot seem to get
 -- the double right clicking working properly yet. - Direct
@@ -1055,9 +1083,36 @@ hyper3 = {"cmd", "alt"}
 hs.hotkey.bind(hyper3, "S", function()
 end)
 
+-- buplicate shortcut
+buplicate = hs.hotkey.bind({"cmd"}, "B", function()
+  if buplicatelastshortcut == 0 or buplicatelastshortcut == nil then
+    _G.applicationname:selectMenuItem(livemenuitems[3].AXChildren[1][12].AXTitle)
+    _G.applicationname:selectMenuItem(livemenuitems[3].AXChildren[1][12].AXTitle)
+    _G.applicationname:selectMenuItem(livemenuitems[3].AXChildren[1][12].AXTitle)
+    _G.applicationname:selectMenuItem(livemenuitems[3].AXChildren[1][12].AXTitle)
+    _G.applicationname:selectMenuItem(livemenuitems[3].AXChildren[1][12].AXTitle)
+    _G.applicationname:selectMenuItem(livemenuitems[3].AXChildren[1][12].AXTitle)
+    _G.applicationname:selectMenuItem(livemenuitems[3].AXChildren[1][12].AXTitle)
+
+  elseif buplicatelastshortcut == 1 then
+    _G.applicationname:selectMenuItem(livemenuitems[3].AXChildren[1][12].AXTitle)
+    _G.applicationname:selectMenuItem(livemenuitems[3].AXChildren[1][12].AXTitle)
+    _G.applicationname:selectMenuItem(livemenuitems[3].AXChildren[1][12].AXTitle)
+    _G.applicationname:selectMenuItem(livemenuitems[3].AXChildren[1][12].AXTitle)
+    _G.applicationname:selectMenuItem(livemenuitems[3].AXChildren[1][12].AXTitle)
+    _G.applicationname:selectMenuItem(livemenuitems[3].AXChildren[1][12].AXTitle)
+    _G.applicationname:selectMenuItem(livemenuitems[3].AXChildren[1][12].AXTitle)
+    _G.applicationname:selectMenuItem(livemenuitems[3].AXChildren[1][12].AXTitle)
+  end
+  buplicatelastshortcut = 1
+end)
+
 -- since eventtap.events seems to use quite a bit of CPU on lower end models, I've decided to try and condense a bunch of such shortcuts into this section.
 -- the advantage of this approach is, unlike hs.hotkey, that it sends the original input still.
 -- it also allows you to trigger actions on the key down or key up event only, which is nice. 
+
+-- I also tend to prefer tasking the menubar instead of using a cmd keystroke. There seems to be a system bound limit on how fast you can send shortcuts.
+-- by using the menubar instead I'm able to bypass this somehow
 
 _G.debounce = false
 down12, down22 = false, true
@@ -1081,6 +1136,11 @@ _G.quickmacro = hs.eventtap.new({ -- this is the hs.eventtap event that contains
           local hyper2 = {"cmd", "shfit"}
           hs.eventtap.keyStroke(hyper2, "J")
       end
+    end
+
+    if keycode == hs.keycodes.map["G"] and hs.eventtap.checkKeyboardModifiers().alt and eventtype == hs.eventtap.event.types.keyDown then
+      point = hs.mouse.getAbsolutePosition()
+      hs.eventtap.middleClick(point, 0)
     end
 
     -- envelope mode macro
@@ -1112,7 +1172,7 @@ _G.quickmacro = hs.eventtap.new({ -- this is the hs.eventtap event that contains
       postpoint["x"] = (_G.dimensions.x + 51)
       postpoint["y"] = (_G.dimensions.y + _G.dimensions.h - 47)
       hs.eventtap.leftClick(postpoint, 0)
-      hs.mouse.setAbsolutePosition(prepoint)
+      hs.eventtap.event.newMouseEvent(hs.eventtap.event.types["leftMouseUp"], prepoint):post()
       -- print(hs.inspect("prepoint: " .. prepoint))
     end
 
@@ -1257,7 +1317,7 @@ _G.quickmacro = hs.eventtap.new({ -- this is the hs.eventtap event that contains
       end
     end
 
-    -- Absolute Buplicate
+    -- Absolute Duplicate
     if _G.absolutereplace ~= 0 then
       if ctrlabsoluteduplicate == 1 then
         if keycode == hs.keycodes.map["D"] and hs.eventtap.checkKeyboardModifiers().ctrl and hs.eventtap.checkKeyboardModifiers().cmd and eventtype == hs.eventtap.event.types.keyUp then
@@ -1318,6 +1378,9 @@ _G.quickmacro = hs.eventtap.new({ -- this is the hs.eventtap event that contains
       end
     end
 
+    if keycode ~= hs.keycodes.map["B"] or eventtype == hs.eventtap.event.types.leftMouseDown and buplicatelastshortcut == 1 then
+      buplicatelastshortcut = 0
+    end
 
     if _G.double0todelete == 1 then
       if keycode == hs.keycodes.map["0"] then -- double zero to delete
@@ -1347,7 +1410,7 @@ _G.quickmacro = hs.eventtap.new({ -- this is the hs.eventtap event that contains
       end
     end
 
-    if keycode == hs.keycodes.map["X"] and hs.eventtap.checkKeyboardModifiers().alt then -- clear track
+    if keycode == hs.keycodes.map["X"] and hs.eventtap.checkKeyboardModifiers().alt and eventtype == hs.eventtap.event.types.keyDown then -- clear track
       if firstDown ~= nil or secondDown ~= nil then
         timeRMBTime, firstDown, secondDown = 0, false, true
       end
@@ -1364,7 +1427,7 @@ _G.quickmacro = hs.eventtap.new({ -- this is the hs.eventtap event that contains
       firstRightClick:start()
     end
 
-    if keycode == hs.keycodes.map["C"] and hs.eventtap.checkKeyboardModifiers().alt then -- colour track
+    if keycode == hs.keycodes.map["C"] and hs.eventtap.checkKeyboardModifiers().alt and eventtype == hs.eventtap.event.types.keyDown then -- colour track
       if firstDown ~= nil or secondDown ~= nil then
         timeRMBTime, firstDown, secondDown = 0, false, true
       end
@@ -1380,7 +1443,293 @@ _G.quickmacro = hs.eventtap.new({ -- this is the hs.eventtap event that contains
       firstRightClick:start()
     end
 
+    if vstshortcuts == 1 then
+      if keycode == hs.keycodes.map["Z"] and hs.eventtap.checkKeyboardModifiers().cmd and not hs.eventtap.checkKeyboardModifiers().shift and eventtype == hs.eventtap.event.types.keyDown then -- pro-q 3 undo
+        windowname = hs.window.focusedWindow():title()
+        if string.lower(string.gsub(windowname, "(.*)/.*$","%1")) == "fabfilter pro-q 3" and scaling == 0 then
+          windowframe = hs.window.focusedWindow():frame()
+          prepoint = hs.mouse.getAbsolutePosition()
+          postpoint = {}
+          quotient = windowframe.w/windowframe.h
+          quotient = string.format("%.4f", quotient) -- I used a bunch of string.format here because for some reason the normal way didn't work?????????? no idea why
+
+          if quotient == string.format("%.4f", 2.0512820512821) then --mini scaling
+            fraction = 13/30
+          end
+          if quotient == string.format("%.4f", 1.6112266112266) then --small scaling
+            fraction = 12/30
+          end
+          if quotient == string.format("%.4f", 1.6187050359712) then --medium scaling
+            fraction = 12/31
+          end
+          if quotient == string.format("%.4f", 1.625) then --large scaling
+            fraction = 12/30
+          end
+          if quotient == string.format("%.4f", 1.6304347826087) then --extra large scaling
+            fraction = 12/29
+          end
+          if fraction == nil then
+            hs.osascript.applescript([[tell application "Live" to display dialog "If you're seeing this, it means that Midas didn't properly think about the way VST plugins deal with scaling at your current display resolution." & return & "Perhaps you have the plugin (or your OS) set to a custom scaling amount?" & return & "It is recommended to disable the VST specific shortcuts in the settings.ini if you want to continue to use custom scaling" & return & "this shortcuts will be disabled until LES is reloaded." buttons {"Ok"} default button "Ok" with title "Live Enhancement Suite" with icon POSIX file "/Applications/Live Enhancement Suite.app/Contents/Resources/LESdialog2.icns"]])
+            scaling = 1
+            goto yeet
+          end
+
+          postpoint["x"] = windowframe.x + (windowframe.w * fraction)
+          postpoint["y"] = windowframe.y + titlebarheight() + 20
+          hs.eventtap.leftClick(postpoint, 0)
+          hs.eventtap.event.newMouseEvent(hs.eventtap.event.types["leftMouseUp"], postpoint):post()
+
+          hs.eventtap.event.newMouseEvent(hs.eventtap.event.types["leftMouseUp"], prepoint):post() -- a disconnected left click up event is faster than hs.mouse.setAbsolutePosition()
+          fraction = nil
+          quotient = nil
+        end
+      end
+
+      if keycode == hs.keycodes.map["Z"] and hs.eventtap.checkKeyboardModifiers().cmd and hs.eventtap.checkKeyboardModifiers().shift and eventtype == hs.eventtap.event.types.keyDown then -- pro-q 3 redo
+        windowname = hs.window.focusedWindow():title()
+        if string.lower(string.gsub(windowname, "(.*)/.*$","%1")) == "fabfilter pro-q 3" and scaling == 0 then
+          windowframe = hs.window.focusedWindow():frame()
+          prepoint = hs.mouse.getAbsolutePosition()
+          postpoint = {}
+          quotient = windowframe.w/windowframe.h
+          quotient = string.format("%.4f", quotient) -- I used a bunch of string.format here because for some reason the normal way didn't work?????????? no idea why
+
+          if quotient == string.format("%.4f", 2.0512820512821) then --mini scaling
+            fraction = 14/30
+          end
+          if quotient == string.format("%.4f", 1.6112266112266) then --small scaling
+            fraction = 13/30
+          end
+          if quotient == string.format("%.4f", 1.6187050359712) then --medium scaling
+            fraction = 13/31
+          end
+          if quotient == string.format("%.4f", 1.625) then --large scaling
+            fraction = 12/28
+          end
+          if quotient == string.format("%.4f", 1.6304347826087) then --extra large scaling
+            fraction = 13/30
+          end
+          if fraction == nil then
+            hs.osascript.applescript([[tell application "Live" to display dialog "If you're seeing this, it means that Midas didn't properly think about the way VST plugins deal with scaling at your current display resolution." & return & "Perhaps you have the plugin (or your OS) set to a custom scaling amount?" & return & "It is recommended to disable the VST specific shortcuts in the settings.ini if you want to continue to use custom scaling" & return & "this shortcuts will be disabled until LES is reloaded." buttons {"Ok"} default button "Ok" with title "Live Enhancement Suite" with icon POSIX file "/Applications/Live Enhancement Suite.app/Contents/Resources/LESdialog2.icns"]])
+            scaling = 1
+            goto yeet
+          end
+
+          postpoint["x"] = windowframe.x + (windowframe.w * fraction)
+          postpoint["y"] = windowframe.y + titlebarheight() + 20
+          hs.eventtap.leftClick(postpoint, 0)
+          hs.eventtap.event.newMouseEvent(hs.eventtap.event.types["leftMouseUp"], postpoint):post()
+
+          hs.eventtap.event.newMouseEvent(hs.eventtap.event.types["leftMouseUp"], prepoint):post() -- a disconnected left click up event is faster than hs.mouse.setAbsolutePosition()
+          fraction = nil
+          quotient = nil
+        end
+      end
+      ::yeet::
+    end
+
 end):start() -- starts the eventtap listener containing all of the keyboard shortcuts.
+
+_G.pausebutton = hs.eventtap.new({
+  hs.eventtap.event.types.keyDown,
+  hs.eventtap.event.types.keyUp,
+}, function(event)
+  local keycode = event:getKeyCode()
+  local eventtype = event:getType()
+
+  if keycode == hs.keycodes.map["1"] and hs.eventtap.checkKeyboardModifiers().cmd and eventtype == hs.eventtap.event.types.keyDown then
+    if threadsenabled == true then
+      hs.alert.show("LES paused")
+      disablemacros()
+      appwatcher:stop()
+    else
+      hs.alert.show("LES unpaused")
+      enablemacros()
+      appwatcher:start()
+    end
+  end
+end):start()
+
+----------------------------------
+--  VST shortcuts as hs.hotkey  --
+----------------------------------
+
+-- hs.hotkey shortcuts replace the user's original input; so I use a combination of hs.application.watcher and hs.timer to enable them only when nescesary.
+
+vst1 = hs.hotkey.bind({}, "1", function() 
+  windowname = hs.window.focusedWindow():title()
+  if string.lower(string.gsub(windowname, "(.*)/.*$","%1")) == "serum" then
+    windowframe = hs.window.focusedWindow():frame()
+    prepoint = hs.mouse.getAbsolutePosition()
+    postpoint = {}
+    postpoint["x"] = windowframe.x + (windowframe.w * 2/9)
+    postpoint["y"] = windowframe.y + titlebarheight() + 20
+
+    hs.eventtap.leftClick(postpoint, 0)
+    hs.eventtap.event.newMouseEvent(hs.eventtap.event.types["leftMouseUp"], postpoint):post()
+
+    hs.eventtap.event.newMouseEvent(hs.eventtap.event.types["leftMouseUp"], prepoint):post() -- a disconnected left click up event is faster than hs.mouse.setAbsolutePosition()
+  elseif string.lower(string.gsub(windowname, "(.*)/.*$","%1")) == "sylenth1" or string.lower(string.gsub(windowname, "(.*)/.*$","%1")) == "sylenth" then
+    Sylenth()
+  elseif string.lower(string.gsub(windowname, "(.*)/.*$","%1")) == "massive" then
+    windowframe = hs.window.focusedWindow():frame()
+    prepoint = hs.mouse.getAbsolutePosition()
+    postpoint = {}
+    postpoint["x"] = windowframe.x + (windowframe.w * 15/958)
+    postpoint["y"] = windowframe.y + titlebarheight() + (windowframe.h*72/680)
+
+    hs.eventtap.leftClick(postpoint, 0)
+    hs.eventtap.event.newMouseEvent(hs.eventtap.event.types["leftMouseUp"], postpoint):post()
+
+    hs.eventtap.event.newMouseEvent(hs.eventtap.event.types["leftMouseUp"], prepoint):post() -- a disconnected left click up event is faster than hs.mouse.setAbsolutePosition()
+  end
+end)
+
+vst2 = hs.hotkey.bind({}, "2", function() 
+  windowname = hs.window.focusedWindow():title()
+  if string.lower(string.gsub(windowname, "(.*)/.*$","%1")) == "serum" then
+    windowframe = hs.window.focusedWindow():frame()
+    prepoint = hs.mouse.getAbsolutePosition()
+    postpoint = {}
+    postpoint["x"] = windowframe.x + (windowframe.w * 25/90)
+    postpoint["y"] = windowframe.y + titlebarheight() + 20
+
+    hs.eventtap.leftClick(postpoint, 0)
+    hs.eventtap.event.newMouseEvent(hs.eventtap.event.types["leftMouseUp"], postpoint):post()
+
+    hs.eventtap.event.newMouseEvent(hs.eventtap.event.types["leftMouseUp"], prepoint):post() -- a disconnected left click up event is faster than hs.mouse.setAbsolutePosition()
+  elseif string.lower(string.gsub(windowname, "(.*)/.*$","%1")) == "sylenth1" or string.lower(string.gsub(windowname, "(.*)/.*$","%1")) == "sylenth" then
+    Sylenth()
+  elseif string.lower(string.gsub(windowname, "(.*)/.*$","%1")) == "massive" then
+    windowframe = hs.window.focusedWindow():frame()
+    prepoint = hs.mouse.getAbsolutePosition()
+    postpoint = {}
+    postpoint["x"] = windowframe.x + (windowframe.w * 15/958)
+    postpoint["y"] = windowframe.y + titlebarheight() + (windowframe.h*186/680)
+
+    hs.eventtap.leftClick(postpoint, 0)
+    hs.eventtap.event.newMouseEvent(hs.eventtap.event.types["leftMouseUp"], postpoint):post()
+
+    hs.eventtap.event.newMouseEvent(hs.eventtap.event.types["leftMouseUp"], prepoint):post() -- a disconnected left click up event is faster than hs.mouse.setAbsolutePosition()
+  end
+end)
+
+vst3 = hs.hotkey.bind({}, "3", function() 
+  windowname = hs.window.focusedWindow():title()
+  if string.lower(string.gsub(windowname, "(.*)/.*$","%1")) == "serum" then
+    windowframe = hs.window.focusedWindow():frame()
+    prepoint = hs.mouse.getAbsolutePosition()
+    postpoint = {}
+    postpoint["x"] = windowframe.x + (windowframe.w * 325/900)
+    postpoint["y"] = windowframe.y + titlebarheight() + 20
+
+    hs.eventtap.leftClick(postpoint, 0)
+    hs.eventtap.event.newMouseEvent(hs.eventtap.event.types["leftMouseUp"], postpoint):post()
+
+    hs.eventtap.event.newMouseEvent(hs.eventtap.event.types["leftMouseUp"], prepoint):post() -- a disconnected left click up event is faster than hs.mouse.setAbsolutePosition()
+  elseif string.lower(string.gsub(windowname, "(.*)/.*$","%1")) == "massive" then
+    windowframe = hs.window.focusedWindow():frame()
+    prepoint = hs.mouse.getAbsolutePosition()
+    postpoint = {}
+    postpoint["x"] = windowframe.x + (windowframe.w * 15/958)
+    postpoint["y"] = windowframe.y + titlebarheight() + (windowframe.h*305/680)
+
+    hs.eventtap.leftClick(postpoint, 0)
+    hs.eventtap.event.newMouseEvent(hs.eventtap.event.types["leftMouseUp"], postpoint):post()
+
+    hs.eventtap.event.newMouseEvent(hs.eventtap.event.types["leftMouseUp"], prepoint):post() -- a disconnected left click up event is faster than hs.mouse.setAbsolutePosition()
+  end
+end)
+
+vst4 = hs.hotkey.bind({}, "4", function() 
+  windowname = hs.window.focusedWindow():title()
+  if string.lower(string.gsub(windowname, "(.*)/.*$","%1")) == "serum" then
+    windowframe = hs.window.focusedWindow():frame()
+    prepoint = hs.mouse.getAbsolutePosition()
+    postpoint = {}
+    postpoint["x"] = windowframe.x + (windowframe.w * 4/9)
+    postpoint["y"] = windowframe.y + titlebarheight() + 20
+
+    hs.eventtap.leftClick(postpoint, 0)
+    hs.eventtap.event.newMouseEvent(hs.eventtap.event.types["leftMouseUp"], postpoint):post()
+
+    hs.eventtap.event.newMouseEvent(hs.eventtap.event.types["leftMouseUp"], prepoint):post() -- a disconnected left click up event is faster than hs.mouse.setAbsolutePosition()
+  elseif string.lower(string.gsub(windowname, "(.*)/.*$","%1")) == "massive" then
+    windowframe = hs.window.focusedWindow():frame()
+    prepoint = hs.mouse.getAbsolutePosition()
+    postpoint = {}
+    postpoint["x"] = windowframe.x + (windowframe.w * 15/958)
+    postpoint["y"] = windowframe.y + titlebarheight() + (windowframe.h*433/680)
+
+    hs.eventtap.leftClick(postpoint, 0)
+    hs.eventtap.event.newMouseEvent(hs.eventtap.event.types["leftMouseUp"], postpoint):post()
+
+    hs.eventtap.event.newMouseEvent(hs.eventtap.event.types["leftMouseUp"], prepoint):post() -- a disconnected left click up event is faster than hs.mouse.setAbsolutePosition()
+  end
+end)
+
+vst5 = hs.hotkey.bind({}, "5", function() 
+  windowname = hs.window.focusedWindow():title()
+  if string.lower(string.gsub(windowname, "(.*)/.*$","%1")) == "massive" then
+    windowframe = hs.window.focusedWindow():frame()
+    prepoint = hs.mouse.getAbsolutePosition()
+    postpoint = {}
+    postpoint["x"] = windowframe.x + (windowframe.w * 15/958)
+    postpoint["y"] = windowframe.y + titlebarheight() + (windowframe.h*547/680)
+
+    hs.eventtap.leftClick(postpoint, 0)
+    hs.eventtap.event.newMouseEvent(hs.eventtap.event.types["leftMouseUp"], postpoint):post()
+
+    hs.eventtap.event.newMouseEvent(hs.eventtap.event.types["leftMouseUp"], prepoint):post() -- a disconnected left click up event is faster than hs.mouse.setAbsolutePosition()
+  end
+end)
+
+function Sylenth()
+  prepoint = hs.mouse.getAbsolutePosition()
+  windowframe = hs.window.focusedWindow():frame()
+  postpoint["x"] = windowframe.x + (windowframe.w*10/19)
+  postpoint["y"] = windowframe.y + titlebarheight() + 20
+  hs.eventtap.leftClick(postpoint, 0)
+  hs.eventtap.event.newMouseEvent(hs.eventtap.event.types["leftMouseUp"], postpoint):post()
+
+  hs.eventtap.middleClick(prepoint, 0)
+end
+
+undo = hs.hotkey.bind({"cmd"}, "z", function() -- kick 2 undo
+  windowname = hs.window.focusedWindow():title()
+  if string.lower(string.gsub(windowname, "(.*)/.*$","%1")) == "kick 2" then
+    windowframe = hs.window.focusedWindow():frame()
+    prepoint = hs.mouse.getAbsolutePosition()
+    postpoint = {}
+    postpoint["x"] = windowframe.x + (windowframe.w / 3.40)
+    postpoint["y"] = windowframe.y + titlebarheight() + 85
+
+    hs.eventtap.middleClick(postpoint, 12000) -- for some reason middle click works but not left click
+    -- hs.eventtap.event.newMouseEvent(hs.eventtap.event.types["leftMouseUp"], postpoint):post()
+    hs.timer.usleep(12000)
+    hs.eventtap.event.newMouseEvent(hs.eventtap.event.types["leftMouseUp"], prepoint):post() -- a disconnected left click up event is faster than hs.mouse.setAbsolutePosition()
+  end
+end)
+
+redo = hs.hotkey.bind({"cmd", "shift"}, "z", function() -- kick 2 redo
+  windowname = hs.window.focusedWindow():title()
+  if string.lower(string.gsub(windowname, "(.*)/.*$","%1")) == "kick 2" then
+    windowframe = hs.window.focusedWindow():frame()
+    prepoint = hs.mouse.getAbsolutePosition()
+    postpoint = {}
+    postpoint["x"] = windowframe.x + (windowframe.w / 3.19)
+    postpoint["y"] = windowframe.y + titlebarheight() + 85
+
+    hs.eventtap.middleClick(postpoint, 12000) -- for some reason middle click works but not left click
+    -- hs.eventtap.event.newMouseEvent(hs.eventtap.event.types["leftMouseUp"], postpoint):post()
+    hs.timer.usleep(12000)
+    hs.eventtap.event.newMouseEvent(hs.eventtap.event.types["leftMouseUp"], prepoint):post()
+  end
+end)
+
+-----------------------------
+--  Right CLicking & Menus --
+-----------------------------
 
 function spawnPluginMenu() -- spawns and moves the invisible menu bar menu to the mouse location.
   pluginMenu:popupMenu(hs.mouse.getAbsolutePosition())
@@ -1511,25 +1860,28 @@ function testLive() -- Function for testing if you're in live (this function is 
   end
 end
 
+function titlebarheight()
+  local zoombuttonrect = hs.window.focusedWindow():zoomButtonRect()
+  return zoombuttonrect.h + 4
+end
+
 function bookmarkfunc() -- this allows you to use the bookmark click stuff. It doesn't work as well on macOS as it does on windows because of all the scaling, but I included it anyway for feature parity.
   local point = {}
   local dimensions = hs.application.find("Live"):mainWindow():frame()
-  if hs.application.find("Live"):mainWindow():isFullScreen() == true then
-    local bookmark = {}
-    bookmark["x"] = _G.bookmarkx + dimensions.x
-    bookmark["y"] = _G.bookmarky + dimensions.y
-    print("pee")
-    point = hs.mouse.getAbsolutePosition()
-    point["__luaSkinType"] = nil
-    hs.eventtap.event.newMouseEvent(hs.eventtap.event.types["leftMouseDown"], bookmark):setProperty(hs.eventtap.event.properties.mouseEventClickState, 1):post()
-    if _G.loadspeed <= 0.5 then
-      sleep2 = hs.osascript.applescript([[delay 0.1]])
-    else
-      sleep2 = hs.osascript.applescript([[delay 0.3]])
-    end
-    hs.eventtap.event.newMouseEvent(hs.eventtap.event.types["leftMouseUp"], bookmark):setProperty(hs.eventtap.event.properties.mouseEventClickState, 1):post()
-    hs.mouse.setAbsolutePosition(point)
+  local bookmark = {}
+  bookmark["x"] = _G.bookmarkx + dimensions.x
+  bookmark["y"] = _G.bookmarky + dimensions.y + titlebarheight()
+  print("pee")
+  point = hs.mouse.getAbsolutePosition()
+  point["__luaSkinType"] = nil
+  hs.eventtap.event.newMouseEvent(hs.eventtap.event.types["leftMouseDown"], bookmark):setProperty(hs.eventtap.event.properties.mouseEventClickState, 1):post()
+  if _G.loadspeed <= 0.5 then
+    sleep2 = hs.osascript.applescript([[delay 0.1]])
+  else
+    sleep2 = hs.osascript.applescript([[delay 0.3]])
   end
+  hs.eventtap.event.newMouseEvent(hs.eventtap.event.types["leftMouseUp"], bookmark):setProperty(hs.eventtap.event.properties.mouseEventClickState, 1):post()
+  hs.eventtap.event.newMouseEvent(hs.eventtap.event.types["leftMouseUp"], point):post()
 end
 
 debounce2 = 0
@@ -1622,31 +1974,31 @@ local keyHandler = function(e)
           end
         end
     end
-    if buttonstate2 == true and not hs.eventtap.checkKeyboardModifiers().shift == true then -- macro for showing automation
-      -- print("right clicc")
-      if firstRightClick then
-        firstRightClick:stop()
-      end
-      if firstDown ~= nil or secondDown ~= nil then
-        timeRMBTime, firstDown, secondDown = 0, false, true
-      end
-      firstRightClick:start()
-      hs.eventtap.keyStroke({}, "down", 0)
-      hs.eventtap.keyStroke({}, "return", 0)
-    elseif buttonstate2 == true and hs.eventtap.checkKeyboardModifiers().shift == true then -- macro for showing automation in a new lane
-      -- print("right clicc with shift")
-      -- local sleep = hs.osascript.applescript([[delay 0.01]])
-      if firstRightClick then
-        firstRightClick:stop()
-      end
-      if firstDown ~= nil or secondDown ~= nil then
-        timeRMBTime, firstDown, secondDown = 0, false, true
-      end
-      hs.eventtap.keyStroke({}, "down", 0)
-      hs.eventtap.keyStroke({}, "down", 0)
-      hs.eventtap.keyStroke({}, "return", 0)
-      firstRightClick:start()
-    end
+    -- if buttonstate2 == true and not hs.eventtap.checkKeyboardModifiers().shift == true then -- macro for showing automation
+    --   -- print("right clicc")
+    --   if firstRightClick then
+    --     firstRightClick:stop()
+    --   end
+    --   if firstDown ~= nil or secondDown ~= nil then
+    --     timeRMBTime, firstDown, secondDown = 0, false, true
+    --   end
+    --   firstRightClick:start()
+    --   hs.eventtap.keyStroke({}, "down", 0)
+    --   hs.eventtap.keyStroke({}, "return", 0)
+    -- elseif buttonstate2 == true and hs.eventtap.checkKeyboardModifiers().shift == true then -- macro for showing automation in a new lane
+    --   -- print("right clicc with shift")
+    --   -- local sleep = hs.osascript.applescript([[delay 0.01]])
+    --   if firstRightClick then
+    --     firstRightClick:stop()
+    --   end
+    --   if firstDown ~= nil or secondDown ~= nil then
+    --     timeRMBTime, firstDown, secondDown = 0, false, true
+    --   end
+    --   hs.eventtap.keyStroke({}, "down", 0)
+    --   hs.eventtap.keyStroke({}, "down", 0)
+    --   hs.eventtap.keyStroke({}, "return", 0)
+    --   firstRightClick:start()
+    -- end
 end
 
 -- this is the hammerspoon equivalent of autohotkey's "getKeyState"
@@ -1808,8 +2160,20 @@ function disablemacros() -- this function stops all of the eventtap events, caus
     dingodango:stop()
   end
   directshyper:disable()
+  buplicate:disable()
   _G.quickmacro:stop()
   firstRightClick:stop()
+
+  if vstshortcuts == 1 then
+    vstshenabled = 0
+    vst1:disable()
+    vst2:disable()
+    vst3:disable()
+    vst4:disable()
+    vst5:disable()
+    undo:disable()
+    redo:disable()
+  end
 
   if keyhandlerevent then keyhandlerevent:stop() end
   modifierHandler:stop()
@@ -1822,8 +2186,10 @@ function enablemacros() -- this function enables all of the eventtap events, cau
     dingodango:start()
   end
   directshyper:enable()
+  buplicate:enable()
   _G.quickmacro:start()
   firstRightClick:start()
+
   if _G.nomacro == false then
     modifierHandler:start()
   end
@@ -1841,15 +2207,17 @@ function setstricttime() -- this function manages the check box in the menu
 
   if _G.stricttimevar == true then
     menubarwithdebugoff[7].state = "off"
-    menubartabledebugon[10].state = "off"
+    menubartabledebugon[11].state = "off"
     _G.stricttimevar = false
+    os.execute("rm ~/.hammerspoon/resources/strict.txt")
     if appname then
       clock:start()
     end
   else
     menubarwithdebugoff[7].state = "on"
-    menubartabledebugon[10].state = "on"
+    menubartabledebugon[11].state = "on"
     _G.stricttimevar = true
+    os.execute("echo '' >~/.hammerspoon/resources/strict.txt")
     if testLive() ~= true then
       clock:stop()
     end
@@ -1906,7 +2274,59 @@ end
 windowfilter = hs.window.filter.new({'Live'}, nil) -- activating the window filter
 windowfilter:subscribe(hs.window.filter.windowTitleChanged,coolfunc) -- if the title of the active window changes, execute this function again.
 
-function timerfunc() -- function that writes the time (currently in seconds)
+function timerfunc() 
+-- function that writes the time and checks for vst windows if nescesary (currently in seconds)
+-- unfortunately I couldn't use the appwatcher for this, because the app watcher doesn't detect window switches within the same application..
+  if vstshortcuts == 1 then
+    if hs.window.focusedWindow() == nil then
+      return
+    end
+    if string.lower(string.gsub(hs.window.focusedWindow():title(), "(.*)/.*$","%1")) == "serum" then
+      if vstshenabled == 0 then
+        print("vst window found")
+        vstshenabled = 1
+        vst1:enable()
+        vst2:enable()
+        vst3:enable()
+        vst4:enable()
+      end
+    elseif string.lower(string.gsub(hs.window.focusedWindow():title(), "(.*)/.*$","%1")) == "sylenth1" or string.lower(string.gsub(hs.window.focusedWindow():title(), "(.*)/.*$","%1")) == "sylenth" then
+      if vstshenabled == 0 then
+        print("vst window found")
+        vstshenabled = 1
+        vst1:enable()
+        vst2:enable()
+      end
+    elseif string.lower(string.gsub(hs.window.focusedWindow():title(), "(.*)/.*$","%1")) == "massive" then
+      if vstshenabled == 0 then
+        print("vst window found")
+        vstshenabled = 1
+        vst1:enable()
+        vst2:enable()
+        vst3:enable()
+        vst4:enable()
+        vst5:enable()
+      end
+    elseif string.lower(string.gsub(hs.window.focusedWindow():title(), "(.*)/.*$","%1")) == "kick 2" then
+      if vstshenabled == 0 then
+        print("vst window found")
+        vstshenabled = 1 
+        undo:enable()
+        redo:enable()
+      end
+    elseif vstshenabled == 1 then
+      print("vst shortcuts disabled in-daw")
+      vstshenabled = 0
+      vst1:disable()
+      vst2:disable()
+      vst3:disable()
+      vst4:disable()
+      vst5:disable()
+      undo:disable()
+      redo:disable()
+    end
+  end
+
   if trackname == nil then
     coolfunc()
   end
@@ -1922,10 +2342,11 @@ clock = hs.timer.new(1, timerfunc)
 
 function requesttime() -- this is the function for when someone checks the current project time. Formatting the seconds into hours/minutes/seconds and presenting it in a nice dialog box.
   local currenttime = nil
+  local response = nil
 
   if trackname == nil then
-  hs.osascript.applescript([[tell application "System Events" to display dialog "There was no open project detected. Please open or focus Live and try again." buttons {"Ok"} default button "Ok" with title "Live Enhancement Suite"]])
-  return
+    response = hs.dialog.blockAlert("There was no open project detected.", "Please open or focus Live for a second and try again.", "Ok")
+    return
   end
 
   if _G["timer_" .. trackname] <= 0 or _G["timer_" .. trackname] == nil then
@@ -1939,22 +2360,37 @@ function requesttime() -- this is the function for when someone checks the curre
     currenttime = hours .. " hours, " .. mins .. " minutes, and " .. secs .. " seconds"
   end
 
+  print(currenttime)
+
   if trackname == "unsaved_project" then
-    b, t, o = hs.osascript.applescript([[tell application "Live Enhancement Suite" to display dialog "The total time you've spent in unsaved projects is" & return & "]] .. currenttime .. [[." buttons {"Reset Time", "Ok"} default button "Ok" with title "Live Enhancement Suite" with icon POSIX file "/Applications/Live Enhancement Suite.app/Contents/Resources/LESdialog2.icns"]])
+    response = hs.dialog.blockAlert("Time spent in unsaved projects:", currenttime, "Ok", "Reset Time", "NSCriticalAlertStyle")
   else
-    b, t, o = hs.osascript.applescript([[tell application "Live Enhancement Suite" to display dialog "The total time you've spent in the []] .. trackname .. [[] project is" & return & "]] .. currenttime .. [[." buttons {"Reset Time", "Ok"} default button "Ok" with title "Live Enhancement Suite" with icon POSIX file "/Applications/Live Enhancement Suite.app/Contents/Resources/LESdialog2.icns"]])
+    response = hs.dialog.blockAlert("Time spent inside the [" .. trackname .. "] project:", currenttime, "Ok", "Reset Time", "NSCriticalAlertStyle")
   end
-  b = nil
-  t = nil
-  if o == [[{ 'bhit':'utxt'("Reset Time") }]] then
-    b, t, o = hs.osascript.applescript([[tell application "Live Enhancement Suite" to display dialog "Are you sure?" buttons {"Yes", "No"} default button "No" with title "Live Enhancement Suite" with icon POSIX file "/Applications/Live Enhancement Suite.app/Contents/Resources/LESdialog2.icns"]])
-    if o == [[{ 'bhit':'utxt'("Yes") }]] then
-      _G["timer_" .. trackname] = nil
-      _G["timer_" .. oldtrackname] = nil
+
+  if response == "Reset Time" then
+    response = hs.dialog.blockAlert("Are you sure?", "This action cannot be undone", "No", "Yes", "NSCriticalAlertStyle")
+    if response == "Yes" then
       os.execute([[rm ~/.hammerspoon/resources/time/]] .. trackname .. "_time" .. [[.txt]])
       coolfunc()
     end
   end
+  -- if trackname == "unsaved_project" then
+  --   b, t, o = hs.osascript.applescript([[tell application "Live Enhancement Suite" to display dialog "The total time you've spent in unsaved projects is" & return & "]] .. currenttime .. [[." buttons {"Reset Time", "Ok"} default button "Ok" with title "Live Enhancement Suite" with icon POSIX file "/Applications/Live Enhancement Suite.app/Contents/Resources/LESdialog2.icns"]])
+  -- else
+  --   b, t, o = hs.osascript.applescript([[tell application "Live Enhancement Suite" to display dialog "The total time you've spent in the []] .. trackname .. [[] project is" & return & "]] .. currenttime .. [[." buttons {"Reset Time", "Ok"} default button "Ok" with title "Live Enhancement Suite" with icon POSIX file "/Applications/Live Enhancement Suite.app/Contents/Resources/LESdialog2.icns"]])
+  -- end
+  -- b = nil
+  -- t = nil
+  -- if o == [[{ 'bhit':'utxt'("Reset Time") }]] then
+  --   b, t, o = hs.osascript.applescript([[tell application "Live Enhancement Suite" to display dialog "Are you sure?" buttons {"Yes", "No"} default button "No" with title "Live Enhancement Suite" with icon POSIX file "/Applications/Live Enhancement Suite.app/Contents/Resources/LESdialog2.icns"]])
+  --   if o == [[{ 'bhit':'utxt'("Yes") }]] then
+  --     _G["timer_" .. trackname] = nil
+  --     _G["timer_" .. oldtrackname] = nil
+  --     os.execute([[rm ~/.hammerspoon/resources/time/]] .. trackname .. "_time" .. [[.txt]])
+  --     coolfunc()
+  --   end
+  -- end
   hs.application.launchOrFocus("Live") -- focusses live again when closing the dialog box.
 end
 
@@ -1975,12 +2411,14 @@ function appwatch(name, event, app)
           print("live is in window focus")
           enablemacros()
           clock:start()
+          _G.pausebutton:start()
         end
       elseif threadsenabled == true then
         print("live is not in window focus")
         disablemacros()
         if _G.stricttimevar == true then
           clock:stop()
+          _G.pausebutton:stop()
         else
           print("clock wasn't stopped because strict time is off")
         end
@@ -2437,7 +2875,7 @@ if _G.bookmarkx == nil or _G.dynamicreload == nil or _G.double0todelete == nil t
   o = nil
 end
 
-if _G.absolutereplace == nil or _G.enableclosewindow == nil then -- non-hostile update
+if _G.absolutereplace == nil or _G.enableclosewindow == nil or _G.vstshortcuts == nil then -- non-hostile update
   b, t, o = hs.osascript.applescript([[tell application "System Events" to display dialog "Your settings.ini file is missing parameters because it is from an older version. Do you want to replace it with the new default? Updating the file will clear your personal settings, so make a backup before you do (this is not the configuration of the menu)" buttons {"Yes", "No"} default button "Yes" with title "Live Enhancement Suite" with icon POSIX file "/Applications/Live Enhancement Suite.app/Contents/Resources/LESdialog2.icns"]])
   print(o)
   b = nil

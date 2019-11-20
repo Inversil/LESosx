@@ -18,7 +18,7 @@ else
 end
 
 if hs.accessibilityState() == false then -- testing if hammerspoon has accessibility access.
-  hs.osascript.applescript([[tell application "System Events" to display dialog "Accessibility access is disabled which prevents LES from working properly." & return & "Please turn on accessibility access in" & return & "Prefrences > Security & Privacy > Privacy > Accessibility, and try again." buttons {"Ok"} default button "Ok" with title "Live Enhancement Suite" with icon POSIX file "/Applications/Live Enhancement Suite.app/Contents/Resources/LESdialog2.icns"]])
+  hs.osascript.applescript([[tell application "System Events" to display dialog "Accessibility access is disabled which prevents LES from working properly." & return & "Please turn on accessibility access in" & return & "Preferences > Security & Privacy > Privacy > Accessibility, and try again." buttons {"Ok"} default button "Ok" with title "Live Enhancement Suite" with icon POSIX file "/Applications/Live Enhancement Suite.app/Contents/Resources/LESdialog2.icns"]])
   os.execute("open /System/Library/PreferencePanes/Security.prefPane")
   os.exit()
 end
