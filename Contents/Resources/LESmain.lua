@@ -1,4 +1,4 @@
--- release v15
+-- release v17
 
 homepath = os.getenv("HOME") -- getting the current user's username for later
 version = "release v15" -- allows users to check the version of the script file by testing the variable "version" in the console
@@ -1537,7 +1537,7 @@ _G.pausebutton = hs.eventtap.new({
   local keycode = event:getKeyCode()
   local eventtype = event:getType()
 
-  if keycode == hs.keycodes.map["1"] and hs.eventtap.checkKeyboardModifiers().cmd and eventtype == hs.eventtap.event.types.keyDown then
+  if keycode == hs.keycodes.map["1"] and hs.eventtap.checkKeyboardModifiers().cmd and hs.eventtap.checkKeyboardModifiers().shift and eventtype == hs.eventtap.event.types.keyDown then
     if threadsenabled == true then
       hs.alert.show("LES paused")
       disablemacros()
@@ -1687,6 +1687,7 @@ end)
 function Sylenth()
   prepoint = hs.mouse.getAbsolutePosition()
   windowframe = hs.window.focusedWindow():frame()
+  postpoint = {}
   postpoint["x"] = windowframe.x + (windowframe.w*10/19)
   postpoint["y"] = windowframe.y + titlebarheight() + 20
   hs.eventtap.leftClick(postpoint, 0)
