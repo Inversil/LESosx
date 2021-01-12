@@ -21,8 +21,8 @@ if console then console:close() end -- if the console is up, close the console. 
 function testfirstrun() -- tests if "firstrun.txt" exists. I use this text file on both mac and windows to keep track of the current version.
   local filepath = homepath .. "/.hammerspoon/resources/firstrun.txt"
   local f=io.open(filepath,"r")
-  if f~=nil then 
-    io.close(f) 
+  if f~=nil then
+    io.close(f)
     return true
   else
     return false
@@ -110,7 +110,7 @@ function testcurrentversion(ver)
     io.close(boi)
     return false
 
-  else 
+  else
     os.execute("echo 'beta 9' >~/.hammerspoon/resources/version.txt")
     return true
   end
@@ -134,7 +134,7 @@ end
 --	Integrity checks  --
 ------------------------
 
--- these functions check the if the files nescesary for the script to function; exist. 
+-- these functions check the if the files nescesary for the script to function; exist.
 -- hammerspoon completely spaces out of they don't.
 -- I declare them up here because it fits the theme of this section of the script.
 
@@ -142,11 +142,11 @@ function testsettings()
   local filepath = homepath .. "/.hammerspoon/settings.ini"
   local f=io.open(filepath,"r")
   local var = nil
-  if f~=nil then 
-    io.close(f) 
-    var = true 
-  else 
-    var = false 
+  if f~=nil then
+    io.close(f)
+    var = true
+  else
+    var = false
   end
 
   if var == false then
@@ -167,11 +167,11 @@ function testmenuconfig()
   local filepath = homepath .. "/.hammerspoon/menuconfig.ini"
   local f=io.open(filepath,"r")
   local var = nil
-  if f~=nil then 
-    io.close(f) 
-    var = true 
-  else 
-    var = false 
+  if f~=nil then
+    io.close(f)
+    var = true
+  else
+    var = false
   end
 
   if var == false then
@@ -199,12 +199,12 @@ end
 menubarwithdebugoff = {
     { title = "Configure Menu", fn = function() hs.osascript.applescript([[do shell script "open ~/.hammerspoon/menuconfig.ini -a textedit"]]) end },
     { title = "Configure Settings", fn = function() hs.osascript.applescript([[do shell script "open ~/.hammerspoon/settings.ini -a textedit"]]) end },
-    { title = "-" },  
+    { title = "-" },
     { title = "Donate", fn = function() hs.osascript.applescript([[open location "https://www.paypal.me/enhancementsuite"]]) end },
-    { title = "-" },  
+    { title = "-" },
     { title = "Project Time", fn = function() requesttime() end },
     { title = "Strict Time", fn = function() setstricttime() end },
-    { title = "-" },  
+    { title = "-" },
     { title = "Reload", fn = function() reloadLES() end },
     { title = "Website", fn = function() hs.osascript.applescript([[open location "https://enhancementsuite.me"]]) end },
     { title = "Manual", fn = function() hs.osascript.applescript([[open location "https://docs.enhancementsuite.me"]]) end },
@@ -218,12 +218,12 @@ menubartabledebugon = {
     { title = "-" },
     { title = "Configure Menu", fn = function() hs.osascript.applescript([[do shell script "open ~/.hammerspoon/menuconfig.ini -a textedit"]]) end },
     { title = "Configure Settings", fn = function() hs.osascript.applescript([[do shell script "open ~/.hammerspoon/settings.ini -a textedit"]]) end },
-    { title = "-" },  
+    { title = "-" },
     { title = "Donate", fn = function() hs.osascript.applescript([[open location "https://www.paypal.me/enhancementsuite"]]) end },
-    { title = "-" },  
+    { title = "-" },
     { title = "Project Time", fn = function() requesttime() end },
     { title = "Strict Time", fn = function() setstricttime() end },
-    { title = "-" },  
+    { title = "-" },
     { title = "Reload", fn = function() reloadLES() end },
     { title = "Website", fn = function() hs.osascript.applescript([[open location "https://enhancementsuite.me"]]) end },
     { title = "Manual", fn = function() hs.osascript.applescript([[open location "https://docs.enhancementsuite.me"]]) end },
@@ -232,8 +232,8 @@ menubartabledebugon = {
 
 filepath = homepath .. "/.hammerspoon/resources/strict.txt"
 f=io.open(filepath,"r")
-if f~=nil then 
-  io.close(f) 
+if f~=nil then
+  io.close(f)
   _G.stricttimevar = true
   menubarwithdebugoff[7].state = "on"
   menubartabledebugon[11].state = "on"
@@ -273,7 +273,7 @@ menu2 = {
   { title = "-" },
   { title = "Hirajōshi", fn = function() _G.stampselect = "Hirajoshi" end },
   { title = "In-Sen", fn = function() _G.stampselect = "Insen" end },
-  { title = "Iwato", fn = function() _G.stampselect = "Iwato" end }, 
+  { title = "Iwato", fn = function() _G.stampselect = "Iwato" end },
   { title = "Kumoi", fn = function() _G.stampselect = "Kumoi" end } }, title = "World" },
 
   { menu = { { title = "Chromatic/Freeform Jazz", fn = function() _G.stampselect = "Chromatic" end },
@@ -325,7 +325,7 @@ end
 
 function buildPluginMenu()
 
-  file = io.open("menuconfig.ini", "r") 
+  file = io.open("menuconfig.ini", "r")
   local arr = {}
     for line in file:lines() do
       table.insert (arr, line);
@@ -353,7 +353,7 @@ function buildPluginMenu()
       j = j - 1
     end
   end
-  -- Reverse the order of the array. 
+  -- Reverse the order of the array.
   print(hs.inspect(arr))
   Reverse(arr)
 
@@ -366,7 +366,7 @@ function buildPluginMenu()
       print("divider line found")
       arr[i] = "--"
       table.insert(arr, i, "--")
-    elseif string.len(arr[i]) < 2 and not string.match(arr[i], "%w") then -- this is a bandaid fix preventing lots of empty menu entires 
+    elseif string.len(arr[i]) < 2 and not string.match(arr[i], "%w") then -- this is a bandaid fix preventing lots of empty menu entires
       table.remove(arr, i)
     elseif arr[i] == nil then
       table.remove(arr, i)
@@ -375,7 +375,7 @@ function buildPluginMenu()
     elseif string.match(arr[i], "Readme") or string.match(arr[i], "readme") then
       readmevar = true -- I decided to just have the readme always stick on the bottom since it was easier to program and nobody cares anyway :^)
       table.remove(arr, i)
-    elseif string.find(arr[i], "%-%-") == 1 then 
+    elseif string.find(arr[i], "%-%-") == 1 then
       table.insert(arr, i, "--")
     elseif string.find(arr[i], "End") then
       table.remove(arr, i)
@@ -388,7 +388,7 @@ function buildPluginMenu()
   local subfolderuponelevel = ""
   subfolderhistory = {}
   pluginArray = {}
-  
+
   for i = #arr, 1, - 1 do
     if string.find(string.sub(arr[i],1 ,1), "/") and not string.find(string.sub(arr[i],1 ,2), "//") and not string.find(arr[i], "nocategory") then
       subfoldername = string.gsub(arr[i],'','')
@@ -539,7 +539,7 @@ function buildPluginMenu()
       if string.find(pluginArray[i], "%-%-") or string.find(pluginArray[i], "—") then
         table.insert(_G[categoryName], { title = "-" })
       else
-        table.insert(_G[categoryName], {title = string.sub(thisIndex[3],2), fn = function() loadPlugin(nextIndex[3]) end }) -- inserts plugin 
+        table.insert(_G[categoryName], {title = string.sub(thisIndex[3],2), fn = function() loadPlugin(nextIndex[3]) end }) -- inserts plugin
       end
 
     -- Same scope new folder
@@ -607,9 +607,9 @@ function buildPluginMenu()
     else
       if lastcatagoryName ~= nil then -- this part of the code keeps track of all the subfolder names, so they can be cleared later; preventing double entires on reloadLES()
         if lastcatagoryName ~= categoryName then
-          categorycount = (categorycount + 1) 
+          categorycount = (categorycount + 1)
         end
-      end 
+      end
       lastcatagoryName = categoryName
       categoryhistory[categorycount] = lastcatagoryName
     end
@@ -630,8 +630,8 @@ function buildPluginMenu()
   categorycount = nil
 end
 
-function clearcategories() 
-	-- this part of the code goes back through the folder structure history created around line 585 to clear all folders it before rebuilding the menu again. 
+function clearcategories()
+	-- this part of the code goes back through the folder structure history created around line 585 to clear all folders it before rebuilding the menu again.
 	-- this prevents double entries from showing up after reloadLES() was executed.
   if categoryhistory ~= nil then
     print("category history exists")
@@ -665,8 +665,8 @@ end
 function buildSettings() -- this function digests the settings.ini file.
   if settingsArray ~= nil then -- if there's something left in the settings file table
     delcount = #settingsArray -- delete the table (to prevent problems when using reloadLES() )
-    for i=0, delcount do 
-      settingsArray[i]=nil 
+    for i=0, delcount do
+      settingsArray[i]=nil
     end
   end
 
@@ -805,7 +805,7 @@ function buildSettings() -- this function digests the settings.ini file.
       if _G.double0todelete > 1 or _G.double0todelete < 0 then
         settingserrorbinary("double0todelete", "a number between 0 and 1")
       end
-    end  
+    end
 
     if string.find(settingsArray[i], "absolutereplace =") then
       print("absolutereplace found")
@@ -859,7 +859,7 @@ function buildSettings() -- this function digests the settings.ini file.
       print("pianorollmacro found")
       if hs.keycodes.map[settingsArray[i]:gsub(".*(.*)%=%s","%1")] == nil and _G.nomacro == nil then -- checks if the entered key exists on the keyboard.
       	-- there is an alternate error message here because the generic one confused too many people.
-        hs.osascript.applescript([[tell application "System Events" to display dialog "Hey! The settings entry for \"pianorollmacro\" is not a character corresponding to a key on your keyboard." & return & "" & return & "Closing this dialog box will open the settings file for you; please change the character under \"pianorollmacro\" to a key that exists on your keyboard and then restart the program. You won't be able to properly use many features without it." & return & "" & return & "LES will continue to run without a proper pianoroll macro mapped." buttons {"Ok"} default button "Ok" with title "Live Enhancement Suite" with icon POSIX file "/Applications/Live Enhancement Suite.app/Contents/Resources/LESdialog2.icns"]]) 
+        hs.osascript.applescript([[tell application "System Events" to display dialog "Hey! The settings entry for \"pianorollmacro\" is not a character corresponding to a key on your keyboard." & return & "" & return & "Closing this dialog box will open the settings file for you; please change the character under \"pianorollmacro\" to a key that exists on your keyboard and then restart the program. You won't be able to properly use many features without it." & return & "" & return & "LES will continue to run without a proper pianoroll macro mapped." buttons {"Ok"} default button "Ok" with title "Live Enhancement Suite" with icon POSIX file "/Applications/Live Enhancement Suite.app/Contents/Resources/LESdialog2.icns"]])
         os.execute("open ~/.hammerspoon/settings.ini -a textedit")
         _G.nomacro = true -- a variable that keeps track of whether or not there's a working macro, functions that use it will be excluded when there's not.
       else
@@ -953,7 +953,7 @@ function buildMenuBar() -- this function makes the menu bar happen, the one that
   end
 end
 
-function rebuildRcMenu() 
+function rebuildRcMenu()
 -- This function rebuilds the right click menus inside ableton.
 -- The right click menu's are actually just menu bar items, but they're invisible.
 -- Both the pianomenu and the plugin menu are (re)loaded.
@@ -978,7 +978,7 @@ end
 --	Reloading  --
 -----------------
 
-function cheats() 
+function cheats()
 -- This is the function for the cheats menu. I didn't recreate all of the cheets from the windows version, but I did recreate some of them.
 -- it needs to be up here, because it's used in the reloadLES() routine. Functions need to be declared before they're used.
 
@@ -994,7 +994,7 @@ function cheats()
         down1 = true
         down2 = false
         if press2 ~= nil then
-          if (press1 - press2) < 0.2 then 
+          if (press1 - press2) < 0.2 then
             cheatmenu()
          end
         end
@@ -1003,7 +1003,7 @@ function cheats()
         press2 = hs.timer.secondsSinceEpoch()
         down1 = false
         down2 = true
-        if (press2 - press1) < 0.2 then 
+        if (press2 - press1) < 0.2 then
           cheatmenu()
         end
       end
@@ -1041,14 +1041,14 @@ function reloadLES()
   else
     print("startup = false")
     hs.autoLaunch(false)
-    os.execute([[launchctl unload /Applications/Live\ Enhancement\ Suite.app/Contents/.Hidden/live.enhancement.suite.plist]]) 
+    os.execute([[launchctl unload /Applications/Live\ Enhancement\ Suite.app/Contents/.Hidden/live.enhancement.suite.plist]])
   end
   -- pluginMenu:removeFromMenuBar() -- somehow if stuff doesn't properly get removed
   -- pianoMenu:removeFromMenuBar()
   cheats()
 end
 
-function quickreload() 
+function quickreload()
 -- this quickreload function is used by the dynamicreload feature. The function is executed right before opening the plugin menu, causing the contents to refresh automatically.
 -- it's shorter, smaller, and thus lighter than the full fat reloadLES() function (which became kind of bloaty over time).
   clearcategories()
@@ -1109,7 +1109,7 @@ end)
 
 -- since eventtap.events seems to use quite a bit of CPU on lower end models, I've decided to try and condense a bunch of such shortcuts into this section.
 -- the advantage of this approach is, unlike hs.hotkey, that it sends the original input still.
--- it also allows you to trigger actions on the key down or key up event only, which is nice. 
+-- it also allows you to trigger actions on the key down or key up event only, which is nice.
 
 -- I also tend to prefer tasking the menubar instead of using a cmd keystroke. There seems to be a system bound limit on how fast you can send shortcuts.
 -- by using the menubar instead I'm able to bypass this somehow
@@ -1133,7 +1133,7 @@ _G.quickmacro = hs.eventtap.new({ -- this is the hs.eventtap event that contains
     -- macro for automatically disabling loop on clips
     if _G.disableloop == 1 then
       if keycode == hs.keycodes.map["M"] and hs.eventtap.checkKeyboardModifiers().shift and hs.eventtap.checkKeyboardModifiers().cmd then
-          local hyper2 = {"cmd", "shfit"}
+          local hyper2 = {"cmd", "shift"}
           hs.eventtap.keyStroke(hyper2, "J")
       end
     end
@@ -1204,7 +1204,7 @@ _G.quickmacro = hs.eventtap.new({ -- this is the hs.eventtap event that contains
             local name = (projectname:gsub("(.*)_.*","%1")) -- remove everything prior to the last "_"
 
             if string.find(version, "%.") and string.find(version, "%a") then -- test if the current version syntax has both a decimal and a letter
-              local everythingafterdecimal = version:gsub(".*%.", "") -- process things after decimal and pre decimal 
+              local everythingafterdecimal = version:gsub(".*%.", "") -- process things after decimal and pre decimal
               everythingafterdecimal = everythingafterdecimal:gsub("%a","1")
               version = version:gsub("%..*", "." .. everythingafterdecimal)
             end
@@ -1283,7 +1283,7 @@ _G.quickmacro = hs.eventtap.new({ -- this is the hs.eventtap event that contains
         -- ]])
 
         -- I used to use applescript for this, but it turned out hs.application.selectMenuItem was better.
-        
+
         if string.find(_G.applicationname:path(), "Live 9") then
           _G.applicationname:selectMenuItem(livemenuitems[4].AXChildren[1][13].AXTitle)
         else
@@ -1389,7 +1389,7 @@ _G.quickmacro = hs.eventtap.new({ -- this is the hs.eventtap event that contains
           down12 = true
           down22 = false
           if press22 ~= nil then
-            if (press12 - press22) < 0.05 then 
+            if (press12 - press22) < 0.05 then
               hs.eventtap.keyStroke({}, hs.keycodes.map["delete"], 0)
               press12 = nil
               press22 = nil
@@ -1400,7 +1400,7 @@ _G.quickmacro = hs.eventtap.new({ -- this is the hs.eventtap event that contains
           down12 = false
           down22 = true
           if press12 ~= nil then
-            if (press22 - press12) < 0.05 then 
+            if (press22 - press12) < 0.05 then
               hs.eventtap.keyStroke({}, hs.keycodes.map["delete"], 0)
               press12 = nil
               press22 = nil
@@ -1556,7 +1556,7 @@ end):start()
 
 -- hs.hotkey shortcuts replace the user's original input; so I use a combination of hs.application.watcher and hs.timer to enable them only when nescesary.
 
-vst1 = hs.hotkey.bind({}, "1", function() 
+vst1 = hs.hotkey.bind({}, "1", function()
   windowname = hs.window.focusedWindow():title()
   if string.lower(string.gsub(windowname, "(.*)/.*$","%1")) == "serum" then
     windowframe = hs.window.focusedWindow():frame()
@@ -1585,7 +1585,7 @@ vst1 = hs.hotkey.bind({}, "1", function()
   end
 end)
 
-vst2 = hs.hotkey.bind({}, "2", function() 
+vst2 = hs.hotkey.bind({}, "2", function()
   windowname = hs.window.focusedWindow():title()
   if string.lower(string.gsub(windowname, "(.*)/.*$","%1")) == "serum" then
     windowframe = hs.window.focusedWindow():frame()
@@ -1614,7 +1614,7 @@ vst2 = hs.hotkey.bind({}, "2", function()
   end
 end)
 
-vst3 = hs.hotkey.bind({}, "3", function() 
+vst3 = hs.hotkey.bind({}, "3", function()
   windowname = hs.window.focusedWindow():title()
   if string.lower(string.gsub(windowname, "(.*)/.*$","%1")) == "serum" then
     windowframe = hs.window.focusedWindow():frame()
@@ -1641,7 +1641,7 @@ vst3 = hs.hotkey.bind({}, "3", function()
   end
 end)
 
-vst4 = hs.hotkey.bind({}, "4", function() 
+vst4 = hs.hotkey.bind({}, "4", function()
   windowname = hs.window.focusedWindow():title()
   if string.lower(string.gsub(windowname, "(.*)/.*$","%1")) == "serum" then
     windowframe = hs.window.focusedWindow():frame()
@@ -1668,7 +1668,7 @@ vst4 = hs.hotkey.bind({}, "4", function()
   end
 end)
 
-vst5 = hs.hotkey.bind({}, "5", function() 
+vst5 = hs.hotkey.bind({}, "5", function()
   windowname = hs.window.focusedWindow():title()
   if string.lower(string.gsub(windowname, "(.*)/.*$","%1")) == "massive" then
     windowframe = hs.window.focusedWindow():frame()
@@ -1815,7 +1815,7 @@ firstRightClick = hs.eventtap.new({
   if timeRMBTime == nil then
     timeRMBTime, firstDown, secondDown = 0, false, true
   end
-      
+
   if (hs.timer.secondsSinceEpoch() - timeRMBTime) > timeFrame then
     timeRMBTime, firstDown, secondDown = 0, false, true
   end
@@ -1918,14 +1918,14 @@ function loadPlugin(plugin)
     hs.eventtap.keyStroke({}, "escape", 0)
   end
 
-  
+
   if _G.resettobrowserbookmark == 1 then
     if _G.loadspeed <= 0.5 then
       sleep2 = hs.osascript.applescript([[delay 0.1]])
     else
       sleep2 = hs.osascript.applescript([[delay 0.3]])
     end
-    
+
     if sleep2 ~= nil then
       bookmarkfunc()
     end
@@ -2026,7 +2026,7 @@ local modifierHandler = hs.eventtap.new({ hs.eventtap.event.types.keyDown, hs.ev
         onlyShiftPressed = v and k == "shift"
         if not onlyShiftPressed then break end
     end
-    
+
     if onlyShiftPressed and _G.pressingshit == false then
         _G.pressingshit = true
         -- print("shit on")
@@ -2260,14 +2260,14 @@ function coolfunc(hswindow, appname, straw) -- function that handles saving and 
 
   filepath = homepath .. [[/.hammerspoon/resources/time/]] .. trackname .. "_time" .. [[.txt]] -- loading old time (if it exists)
   local f=io.open(filepath,"r")
-  if f~=nil then 
+  if f~=nil then
     print("timer file found")
     local lines = {}
     for line in f:lines() do
       print("old timer found for this project: " .. line)
       _G["timer_" .. trackname] = line
     end
-    return true 
+    return true
   else
     return
   end
@@ -2275,7 +2275,7 @@ end
 windowfilter = hs.window.filter.new({'Live'}, nil) -- activating the window filter
 windowfilter:subscribe(hs.window.filter.windowTitleChanged,coolfunc) -- if the title of the active window changes, execute this function again.
 
-function timerfunc() 
+function timerfunc()
 -- function that writes the time and checks for vst windows if nescesary (currently in seconds)
 -- unfortunately I couldn't use the appwatcher for this, because the app watcher doesn't detect window switches within the same application..
   if vstshortcuts == 1 then
@@ -2311,7 +2311,7 @@ function timerfunc()
     elseif string.lower(string.gsub(hs.window.focusedWindow():title(), "(.*)/.*$","%1")) == "kick 2" then
       if vstshenabled == 0 then
         print("vst window found")
-        vstshenabled = 1 
+        vstshenabled = 1
         undo:enable()
         redo:enable()
       end
@@ -2334,7 +2334,7 @@ function timerfunc()
   if trackname ~= nil then
     if _G["timer_" .. trackname] == nil then
       _G["timer_" .. trackname] = 1
-    else 
+    else
       _G["timer_" .. trackname] = _G["timer_" .. trackname] + 1
     end
   end
@@ -2621,7 +2621,7 @@ function GypsyM()
 end
 
 function Hirajoshi()
-  hs.eventtap.keyStroke({"cmd"}, "C", 0) ; hs.eventtap.keyStroke({"cmd"}, "V", 0) ; hs.eventtap.keyStroke({}, "Up", 0) ; hs.eventtap.keyStroke({}, "Up", 0) 
+  hs.eventtap.keyStroke({"cmd"}, "C", 0) ; hs.eventtap.keyStroke({"cmd"}, "V", 0) ; hs.eventtap.keyStroke({}, "Up", 0) ; hs.eventtap.keyStroke({}, "Up", 0)
   hs.eventtap.keyStroke({"cmd"}, "C", 0) ; hs.eventtap.keyStroke({"cmd"}, "V", 0) ; hs.eventtap.keyStroke({}, "Up", 0)
   hs.eventtap.keyStroke({"cmd"}, "C", 0) ; hs.eventtap.keyStroke({"cmd"}, "V", 0) ; hs.eventtap.keyStroke({}, "Up", 0) ; hs.eventtap.keyStroke({}, "Up", 0) ; hs.eventtap.keyStroke({}, "Up", 0) ; hs.eventtap.keyStroke({}, "Up", 0)
   hs.eventtap.keyStroke({"cmd"}, "C", 0) ; hs.eventtap.keyStroke({"cmd"}, "V", 0) ; hs.eventtap.keyStroke({}, "Up", 0)
@@ -2630,7 +2630,7 @@ end
 function Insen()
   hs.eventtap.keyStroke({"cmd"}, "C", 0) ; hs.eventtap.keyStroke({"cmd"}, "V", 0) ; hs.eventtap.keyStroke({}, "Up", 0)
   hs.eventtap.keyStroke({"cmd"}, "C", 0) ; hs.eventtap.keyStroke({"cmd"}, "V", 0) ; hs.eventtap.keyStroke({}, "Up", 0) ; hs.eventtap.keyStroke({}, "Up", 0) ; hs.eventtap.keyStroke({}, "Up", 0) ; hs.eventtap.keyStroke({}, "Up", 0)
-  hs.eventtap.keyStroke({"cmd"}, "C", 0) ; hs.eventtap.keyStroke({"cmd"}, "V", 0) ; hs.eventtap.keyStroke({}, "Up", 0) ; hs.eventtap.keyStroke({}, "Up", 0) 
+  hs.eventtap.keyStroke({"cmd"}, "C", 0) ; hs.eventtap.keyStroke({"cmd"}, "V", 0) ; hs.eventtap.keyStroke({}, "Up", 0) ; hs.eventtap.keyStroke({}, "Up", 0)
   hs.eventtap.keyStroke({"cmd"}, "C", 0) ; hs.eventtap.keyStroke({"cmd"}, "V", 0) ; hs.eventtap.keyStroke({}, "Up", 0) ; hs.eventtap.keyStroke({}, "Up", 0) ; hs.eventtap.keyStroke({}, "Up", 0)
 end
 
@@ -2720,7 +2720,7 @@ function Maj()
   for i = 1, 3, 1 do
     hs.eventtap.keyStroke({}, "Up", 0)
   end
-end 
+end
 
 function Min()
   hs.eventtap.keyStroke({"cmd"}, "C", 0) ; hs.eventtap.keyStroke({"cmd"}, "V", 0)
@@ -2731,7 +2731,7 @@ function Min()
   for i = 1, 4, 1 do
     hs.eventtap.keyStroke({}, "Up", 0)
   end
-end 
+end
 
 function Aug()
   hs.eventtap.keyStroke({"cmd"}, "C", 0) ; hs.eventtap.keyStroke({"cmd"}, "V", 0)
@@ -2742,7 +2742,7 @@ function Aug()
   for i = 1, 4, 1 do
     hs.eventtap.keyStroke({}, "Up", 0)
   end
-end 
+end
 
 function Dim()
   hs.eventtap.keyStroke({"cmd"}, "C", 0) ; hs.eventtap.keyStroke({"cmd"}, "V", 0)
@@ -2753,7 +2753,7 @@ function Dim()
   for i = 1, 3, 1 do
     hs.eventtap.keyStroke({}, "Up", 0)
   end
-end 
+end
 
 function Maj7()
   hs.eventtap.keyStroke({"cmd"}, "C", 0) ; hs.eventtap.keyStroke({"cmd"}, "V", 0)
